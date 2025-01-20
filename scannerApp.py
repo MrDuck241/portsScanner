@@ -41,6 +41,18 @@ def create_app():
     # Tekst na przycisku
     canvas.create_text(820, 40, text="Scan", fill="white", font=("Arial", 16, "bold"), anchor="center")
 
+    # Funkcja uruchamiana po kliknięciu przycisku "Scan"
+    def on_scan_click():
+        ip_address_value = ip_address.get()  # Pobranie wartości z pola IP
+        start_port_value = start_port.get()
+        end_port_value = end_port.get()
+        print(f"IP Address: {ip_address_value}")  # Wyświetlenie w konsoli
+        print(f"Start port: {start_port_value}")
+        print(f"End port: {end_port_value}")
+
+    # Zdarzenia przycisku
+    canvas.tag_bind("button", "<Button-1>", lambda event: on_scan_click())
+
     # Efekty najechania na przycisk
     def highlight_button(event):
         canvas.itemconfig("button", fill="#6B8E23")
