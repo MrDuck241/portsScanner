@@ -1,4 +1,6 @@
 import tkinter as tk
+import scanner as sc
+import argparse
 
 def create_app():
     # Utworzenie głównego okna
@@ -49,6 +51,10 @@ def create_app():
         print(f"IP Address: {ip_address_value}")  # Wyświetlenie w konsoli
         print(f"Start port: {start_port_value}")
         print(f"End port: {end_port_value}")
+        openPorts = sc.main(ip_address_value, start_port_value, end_port_value)
+        print("Scanned ports from module")
+        for val in openPorts:
+            print(val)
 
     # Zdarzenia przycisku
     canvas.tag_bind("button", "<Button-1>", lambda event: on_scan_click())
@@ -96,4 +102,7 @@ def create_app():
     root.mainloop()
 
 if __name__ == "__main__":
+    #openPorts = sc.main()
+    #print("Opened ports lists from scanner.py")
     create_app()
+
