@@ -1,6 +1,8 @@
 import tkinter as tk
 import scanner as sc
-import argparse
+from datetime import datetime
+
+open_ports = []
 
 def create_app():
     # Utworzenie głównego okna
@@ -11,98 +13,114 @@ def create_app():
     canvas = tk.Canvas(root, width=1000, height=600, bg="grey")
     canvas.pack()
 
-    # Pobranie rozmiarów canvas po jego utworzeniu
-    root.update_idletasks()  # Aktualizacja GUI, aby uzyskać wymiary
-    canvas_width = canvas.winfo_width()
-    canvas_height = canvas.winfo_height()
-
-    # Dodanie poziomej linii
+    # Dodanie linii i tekstów tytułowych
     canvas.create_line(0, 80, 1000, 80, fill="black", width=2)
-
-    # Dodanie tekstu "Ports Scanner"
     canvas.create_text(14, 25, text="Ports Scanner", fill="green", font=("Arial", 16), anchor="nw")
 
-    # Dodanie tekstów i Entry dla IP, portu początkowego i końcowego
-    canvas.create_text(235, 15, text="Ip address", fill="black", font=("Arial", 12), anchor="nw")
+    # Pola tekstowe i etykiety
+    canvas.create_text(235, 15, text="IP Address", fill="black", font=("Arial", 12), anchor="nw")
     ip_address = tk.Entry(root, bd=2, width=16)
     canvas.create_window(270, 50, window=ip_address)
 
-    canvas.create_text(408, 15, text="Start port", fill="black", font=("Arial", 12), anchor="nw")
+    canvas.create_text(408, 15, text="Start Port", fill="black", font=("Arial", 12), anchor="nw")
     start_port = tk.Entry(root, bd=2, width=16)
     canvas.create_window(440, 50, window=start_port)
 
-    canvas.create_text(580, 15, text="End port", fill="black", font=("Arial", 12), anchor="nw")
+    canvas.create_text(580, 15, text="End Port", fill="black", font=("Arial", 12), anchor="nw")
     end_port = tk.Entry(root, bd=2, width=16)
     canvas.create_window(610, 50, window=end_port)
 
-    ##################################################
-    # Stworzenie zaokrąglonego prostokąta (przycisk)
-    # Zaokrąglony przycisk z gradientem
-    canvas.create_rectangle(765, 15, 875, 70, outline="black", fill="#4C6A4E", width=2, tags="button")
+    # Dodanie przycisku "Scan"
+    canvas.create_rectangle(720, 15, 820, 70, outline="black", fill="#4C6A4E", width=2, tags="scanButton")
+    canvas.create_text(770, 40, text="Scan", fill="white", font=("Arial", 16, "bold"), anchor="center")
 
-    # Tekst na przycisku
-    canvas.create_text(820, 40, text="Scan", fill="white", font=("Arial", 16, "bold"), anchor="center")
+    # Dodanie przycisku "Save"
+    canvas.create_rectangle(860, 15, 960, 70, outline="black", fill="#4C6A4E", width=2, tags="saveButton")
+    canvas.create_text(910, 40, text="Save", fill="white", font=("Arial", 16, "bold"), anchor="center")
 
-    # Funkcja uruchamiana po kliknięciu przycisku "Scan"
+    # Listbox do wyświetlania wyników
+    results_listbox = tk.Listbox(root, height=20, width=70)
+    results_listbox.place(x=50, y=150)
+
+    # Funkcja wywoływana po kliknięciu przycisku "Scan"
     def on_scan_click():
-        ip_address_value = ip_address.get()  # Pobranie wartości z pola IP
-        start_port_value = start_port.get()
-        end_port_value = end_port.get()
-        print(f"IP Address: {ip_address_value}")  # Wyświetlenie w konsoli
-        print(f"Start port: {start_port_value}")
-        print(f"End port: {end_port_value}")
-        openPorts = sc.main(ip_address_value, start_port_value, end_port_value)
-        print("Scanned ports from module")
-        for val in openPorts:
-            print(val)
+        global open_ports
+        results_listbox.delete(0, tk.END)  # Czyszczenie poprzednich wyników
+        ip = ip_address.get().strip()
+        start = start_port.get().strip()
+        end = end_port.get().strip()
 
-    # Zdarzenia przycisku
-    canvas.tag_bind("button", "<Button-1>", lambda event: on_scan_click())
+        if not ip or not start or not end:
+            results_listbox.insert(tk.END, "Please provide all input data: IP, Start Port, End Port")
+            return
 
-    # Efekty najechania na przycisk
-    def highlight_button(event):
-        canvas.itemconfig("button", fill="#6B8E23")
+        try:
+            start = int(start)
+            end = int(end)
+            if start > end:
+                results_listbox.insert(tk.END, "Start port must be less than end port")
+                return
+            if start < 0 or end <= 0:
+                results_listbox.insert(tk.END, "Invalid ports numbers values")
+                return
+            
+        except ValueError:
+            results_listbox.insert(tk.END, "Ports must be valid number")
+            return
 
-    def reset_button(event):
-        canvas.itemconfig("button", fill="#4C6A4E")
+        try:
+            results_listbox.insert(tk.END, f"Scanning {ip} from port {start} to {end}...")
+            root.update()  # Aktualizacja interfejsu
+            open_ports = sc.main(ip, start, end)
 
-    # Zdarzenia przycisku
-    canvas.tag_bind("button", "<Enter>", highlight_button)
-    canvas.tag_bind("button", "<Leave>", reset_button)
-    ##################################################
+            if open_ports:
+                results_listbox.insert(tk.END, "Open ports found:")
+                for port, service in open_ports:
+                    results_listbox.insert(tk.END, f"Port {port}: {service}")
+            else:
+                results_listbox.insert(tk.END, "No open ports found.")
+        except Exception as e:
+            results_listbox.insert(tk.END, f"Error: {e}")
 
-    # Dodanie tekstu "Detected opened ports"
-    canvas.create_text(85, 110, text="Detected opened ports", fill="green", font=("Arial", 16), anchor="nw")
+    def on_save_click():
 
-    # Dodanie pionowej linii
-    canvas.create_line(440, 80, 440, 600, fill="black", width=2)
+        if not open_ports:
+            results_listbox.insert(tk.END, "No ports to save!")
+            return
+        
+        with open("portsData.txt", "a") as file:
+            file.write(f"Scanning date: {datetime.now()}\n")
+            file.write("Detected open ports:\n")
 
-    # Utworzenie frame dla Listbox i Scrollbar
-    frame = tk.Frame(root)
-    frame.place(x=40, y=150)
+            for port, service in open_ports:
+                file.write(f"Port {port} opened | Service: {service}\n")
+            file.write("End of scanned ports\n\n")
+        results_listbox.insert(tk.END, "Results saved to portsData.txt")
 
-    # Utworzenie Scrollbar
-    scrollbar = tk.Scrollbar(frame, orient=tk.VERTICAL)
+    canvas.tag_bind("scanButton", "<Button-1>", lambda event: on_scan_click())
+    canvas.tag_bind("saveButton", "<Button-1>", lambda event: on_save_click())
 
-    # Utworzenie Listbox
-    listbox = tk.Listbox(frame, height=20, width=50, yscrollcommand=scrollbar.set)
+    def highlight_scan_button(event):
+        canvas.itemconfig("scanButton", fill="#6B8E23")
 
-    # Dodanie elementów do Listbox
-    for i in range(100):  # Lista z 100 elementami
-        listbox.insert(tk.END, f"Element {i + 1}")
+    def reset_scan_button(event):
+        canvas.itemconfig("scanButton", fill="#4C6A4E")
 
-    # Powiązanie Scrollbar z Listbox
-    scrollbar.config(command=listbox.yview)
+    def highlight_save_button(event):
+        canvas.itemconfig("saveButton", fill="#6B8E23")
 
-    # Umieszczanie Listbox i Scrollbar w ramce
-    listbox.pack(side=tk.LEFT)
-    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    def reset_save_button(event):
+        canvas.itemconfig("saveButton", fill="#4C6A4E")
 
-    # Uruchomienie głównej pętli
+    canvas.tag_bind("scanButton", "<Enter>", highlight_scan_button)
+    canvas.tag_bind("scanButton", "<Leave>", reset_scan_button)
+    
+    canvas.tag_bind("saveButton", "<Enter>", highlight_save_button)
+    canvas.tag_bind("saveButton", "<Leave>", reset_save_button)
+
+    # Uruchomienie pętli głównej
     root.mainloop()
 
-if __name__ == "__main__":
-    #openPorts = sc.main()
-    #print("Opened ports lists from scanner.py")
-    create_app()
 
+if __name__ == "__main__":
+    create_app()
