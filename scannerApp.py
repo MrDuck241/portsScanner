@@ -1,6 +1,8 @@
 import tkinter as tk
 import scanner as sc
 from datetime import datetime
+from detectOs import detect_os
+import time
 
 open_ports = []
 
@@ -71,7 +73,14 @@ def create_app():
         try:
             results_listbox.insert(tk.END, f"Scanning {ip} from port {start} to {end}...")
             root.update()  # Aktualizacja interfejsu
-            open_ports = sc.main(ip, start, end)
+            os_info = detect_os(ip)
+            scanTime, open_ports = sc.main(ip, start, end)
+
+            if os_info:
+                results_listbox.insert(tk.END, f"System operacyjny: {os_info}")
+
+            if scanTime:
+                results_listbox.insert(tk.END, f"Czas skanowania portow: {scanTime:.2f} sekund")
 
             if open_ports:
                 results_listbox.insert(tk.END, "Open ports found:")

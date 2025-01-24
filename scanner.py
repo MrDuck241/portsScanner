@@ -1,4 +1,5 @@
 import socket
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 def scan_port(ip, port, results):
@@ -18,11 +19,15 @@ def scan_port(ip, port, results):
 def scan_ports(ip, start_port, end_port):
     #Skanuje porty i zwraca listę otwartych
     results = []
+    start_time = time.perf_counter()
     with ThreadPoolExecutor(max_workers=20) as executor:
         for port in range(start_port, end_port + 1):
+
             executor.submit(scan_port, ip, port, results)
-    return results
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+    return execution_time, results
 
 def main(ip, start_port, end_port):
-    open_ports = scan_ports(ip, start_port, end_port)
-    return open_ports
+    scanTime, open_ports = scan_ports(ip, start_port, end_port)
+    return scanTime, open_ports
